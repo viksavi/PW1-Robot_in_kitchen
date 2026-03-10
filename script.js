@@ -63,7 +63,7 @@ function makePlate(scene, geometry, x, y, z, materialType = 'basic') { // functi
 
 function createAmbientLight(scene) { // function to create ambient light
     const color = 0xFFFFFF;
-    const intensity = 0.5;
+    const intensity = 0.8;
     const light = new THREE.AmbientLight(color, intensity);
     scene.add(light);
     return light;
@@ -72,13 +72,15 @@ function createAmbientLight(scene) { // function to create ambient light
 function createPointLight(scene) { // function to create point light
     const color = 0xfff8e5;
     const intensity = 86;
-    const distance = 15;
+    const distance = 12;
     const light = new THREE.PointLight(color, intensity, distance);
     light.position.set(0, 8, 0);
     light.castShadow = true;
     light.shadow.bias = 0.001; // to reduce shadow acne
     light.shadow.mapSize.width = 2048;
     light.shadow.mapSize.height = 2048;
+    light.shadow.radius = 20;        // higher = softer edges
+    light.shadow.blurSamples = 25;  // higher = smoother blur, more GPU cost
     scene.add(light);
     return light;
 }
@@ -97,8 +99,20 @@ function addGUI(scene, ambientLight, pointLight, cup, plate) { // function to ad
     pointLightF.add(pointLight.position, 'y', 0, 10);
     pointLightF.add(pointLight.position, 'z', -10, 10);
     pointLightF.add(pointLight.shadow, 'bias', -0.01, 0.01, 0.001).name('Shadow bias');
-    pointLightF.add(pointLight.shadow.mapSize, 'width', 256, 4096).name('mapSize width');
-    pointLightF.add(pointLight.shadow.mapSize, 'height', 256, 4096).name('mapSize height');
+    const mapSizes = [256, 512, 1024, 2048, 4096]; // to keep the power of 2 constraint for shadow map sizes
+    pointLightF.add(pointLight.shadow.mapSize, 'width', mapSizes)
+        .name('mapSize width')
+        .onChange(() => { // to dispose the old shadow map and create a new one with the updated size
+            pointLight.shadow.map.dispose();
+            pointLight.shadow.map = null;
+        });
+
+    pointLightF.add(pointLight.shadow.mapSize, 'height', mapSizes)
+        .name('mapSize height')
+        .onChange(() => {
+            pointLight.shadow.map.dispose();
+            pointLight.shadow.map = null;
+        });
 
     const plateF = gui.addFolder("Objects");
     plateF.add(cup.material, 'roughness', 0, 1).name('Cup material roughness');
@@ -219,7 +233,7 @@ export function main_ex1() {
 // Exercise 3
 function ex3() {
     const { scene, camera, renderer, cup, plate, floor, walls, kitchenCounter } = ex1({ materialType: 'standard' });
-    renderer.shadowMap.enabled = true;
+    const controls = new OrbitControls( camera, renderer.domElement );
     setUpShadows(renderer, floor, cup, plate, kitchenCounter, walls);
     const ambientLight = createAmbientLight(scene);
     const pointLight = createPointLight(scene);
