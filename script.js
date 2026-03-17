@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
 //comment the code
 
@@ -119,6 +121,125 @@ function addGUI(scene, ambientLight, pointLight, cup, plate) { // function to ad
     plateF.add(cup.material, 'transmission', 0, 1).name('Cup material transmission');
     plateF.add(cup.material, 'thickness', 0, 1).name('Cup material thickness');
     plateF.addColor(plate.material, 'color').name('Plate color');  
+}
+
+function makeWheel(scene, x, y,z) {
+    const wheel = new THREE.Group();
+    const tire_g = new THREE.CylinderGeometry( 0.58, 0.58, 0.2, 20 );
+    const tire_m = new THREE.MeshStandardMaterial( { color: 0x333333, metalness: 0.6, roughness: 0.5  } );
+    const tire = new THREE.Mesh( tire_g, tire_m );
+    tire.rotation.z = Math.PI / 2;
+    tire.position.set(x, y, z);
+    wheel.add(tire);
+
+    const disk_g = new THREE.CylinderGeometry( 0.35, 0.35, 0.21, 20 );
+    const disk_m = new THREE.MeshStandardMaterial( { color: 0xa6a6a6, metalness: 0.8, roughness: 0.3  } );
+    const disk = new THREE.Mesh( disk_g, disk_m );
+    disk.rotation.z = Math.PI / 2;
+    disk.position.set(x, y, z);
+    wheel.add(disk);
+
+    scene.add(wheel);
+    return wheel;
+}
+
+function makeGripper(x, y, z, material) {
+    const gripper = new THREE.Group();
+    gripper.position.set(x, y, z);
+    const palm_g = new THREE.SphereGeometry(0.2, 20, 20);
+    const palm = new THREE.Mesh( palm_g, material );
+    palm.position.set(0, 0, 0);
+    gripper.add(palm);
+
+    const finger_g = new THREE.CylinderGeometry(0.07, 0.07, 0.4, 20);
+    const finger1 = new THREE.Mesh( finger_g, material );
+    finger1.position.set(- 0.1, - 0.3, 0);
+    gripper.add(finger1);
+
+    const finger2 = new THREE.Mesh( finger_g, material );
+    finger2.position.set(0.1, - 0.3, 0);
+    gripper.add(finger2);
+
+    return gripper;
+}
+
+function makeArm(x, y, z, material) {
+    const shoulder_j = new THREE.Group(); // to handle the pivots
+    const shoulder_g = new THREE.SphereGeometry( 0.3, 20, 20 );
+    const shoulder = new THREE.Mesh( shoulder_g, material );
+    shoulder.position.set(0, 0, 0);
+    shoulder_j.position.set(x, y, z);
+    shoulder_j.add(shoulder);
+
+    const upperArm_g = new THREE.CylinderGeometry(0.15, 0.15, 0.8, 20);
+    const upperArm = new THREE.Mesh( upperArm_g, material );
+    upperArm.position.set(0, -0.5, 0);
+    shoulder_j.add(upperArm);
+
+    const elbow_j = new THREE.Group(); 
+    elbow_j.position.set(0, -1.1, 0);
+    const elbow_g = new THREE.SphereGeometry( 0.25, 20, 20 );
+    const elbow = new THREE.Mesh( elbow_g, material );
+    elbow.position.set(0, 0, 0);
+    elbow_j.add(elbow);
+    shoulder_j.add(elbow_j);
+    
+    const lowerArm_g = new THREE.CylinderGeometry(0.12, 0.12, 0.7, 20);
+    const lowerArm = new THREE.Mesh( lowerArm_g, material );
+    lowerArm.position.set(0, -0.5, 0);
+    elbow_j.add(lowerArm);
+    
+    const gripper = makeGripper(0, -1, 0, material);
+    elbow_j.add(gripper);
+
+    shoulder_j.position.set(x, y, z);
+
+    // for debugging the pivots
+    shoulder_j.add(new THREE.AxesHelper(1));
+    elbow_j.add(new THREE.AxesHelper(0.8));
+    gripper.add(new THREE.AxesHelper(0.5));
+    
+    return { shoulder_j, elbow_j, gripper };
+}
+
+function makeRobot(scene) { // function to create a robot
+    // body
+    const robot = new THREE.Group();
+    const robot_m = new THREE.MeshStandardMaterial( { color: 0xa6a6a6, metalness: 0.6, roughness: 0.5 } );
+    const body_g = new THREE.CylinderGeometry( 0.9, 0.6, 1.7, 35,  );
+    const body = new THREE.Mesh( body_g, robot_m );
+    body.position.y = 2;
+    robot.add(body);
+
+    // neck
+    const neck_g = new THREE.CylinderGeometry( 0.25, 0.25, 0.25, 20 );
+    const neck = new THREE.Mesh( neck_g, robot_m );
+    neck.position.y = 2.95;
+    robot.add(neck);
+    
+    // head
+    const head_g = new RoundedBoxGeometry(1.4, 0.9, 0.8, 8, 0.25);
+    const head = new THREE.Mesh( head_g, robot_m );
+    head.position.y = 3.5;
+    robot.add(head);
+
+    // wheel for legs
+    const wheel1 = makeWheel(scene, -0.5, 0.58, 0);
+    const wheel2 = makeWheel(scene, 0.5, 0.58, 0);
+    robot.add(wheel1);
+    robot.add(wheel2);
+
+    // hand with child objects
+    const arm1 = makeArm( -1.15, 2.65, 0, robot_m);
+    const arm2 = makeArm(1.15, 2.65, 0, robot_m);
+    robot.add(arm1.shoulder_j);
+    robot.add(arm2.shoulder_j);
+
+    // rotations tests
+    arm1.shoulder_j.rotation.y = 0.5; // whole arm 
+    arm1.elbow_j.rotation.z = -0.8;   // forearm + gripper
+    arm1.gripper.rotation.x = -0.3;    // only gripper
+    scene.add( robot );
 }
 
 //renderer setup function
@@ -246,3 +367,21 @@ export function main_ex3() {
     rendererSetup(renderer, scene, camera);
 }
 
+// Exercise 2
+function ex2() {
+    const { scene, camera, renderer } = ex1({ materialType: 'basic' });
+    return { scene, camera, renderer };
+}
+
+export function main_ex2() {
+    const { scene, camera, renderer} = ex2();
+    const rgbeLoader = new RGBELoader();
+    rgbeLoader.load('https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr', (envMap) => { //change it to my custom one
+        envMap.mapping = THREE.EquirectangularReflectionMapping;
+        scene.environment = envMap; // applies to all metallic materials
+    });
+    const controls = new OrbitControls( camera, renderer.domElement );
+    makeRobot(scene);
+    
+    rendererSetup(renderer, scene, camera);
+}
