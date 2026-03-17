@@ -240,6 +240,8 @@ function makeRobot(scene) { // function to create a robot
     arm1.elbow_j.rotation.z = -0.8;   // forearm + gripper
     arm1.gripper.rotation.x = -0.3;    // only gripper
     scene.add( robot );
+
+    return robot;
 }
 
 //renderer setup function
@@ -339,10 +341,8 @@ function ex1({ materialType = 'basic' } = {})
 
     // creating plate
     const plate_g = new THREE.CylinderGeometry( 0.5, 0.3, 0.1, 17 );
-    const plate_m = new THREE.MeshBasicMaterial({  color: 0xACB4B9 });
     const plate = makePlate(scene, plate_g, -1, 2.6, 4, materialType);
     scene.add( plate );
-
     return { scene, camera, renderer, cup, plate, floor, walls, kitchenCounter };
 }
 
@@ -351,9 +351,39 @@ export function main_ex1() {
     rendererSetup(renderer, scene, camera);
 }
 
+// Exercise 2
+function ex2() {
+    const { scene, camera, renderer } = ex1({ materialType: 'basic' });
+    camera.position.set(
+        -6.3, 
+        6.174, 
+        -9.08
+    );
+    camera.rotation.set(
+        -2.70, 
+        -0.56, 
+        -2.895,
+        'XYZ'
+    );
+    const rgbeLoader = new RGBELoader();
+    rgbeLoader.load('https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr', (envMap) => { //change it to my custom one
+        envMap.mapping = THREE.EquirectangularReflectionMapping;
+        scene.environment = envMap; // applies to all metallic materials
+    });
+    const robot = makeRobot(scene);
+    return { scene, camera, renderer, robot };
+}
+
+export function main_ex2() {
+    const { scene, camera, renderer} = ex2();    
+    rendererSetup(renderer, scene, camera);
+}
+
 // Exercise 3
 function ex3() {
     const { scene, camera, renderer, cup, plate, floor, walls, kitchenCounter } = ex1({ materialType: 'standard' });
+    const robot = makeRobot(scene);
+    scene.add(robot);  
     const controls = new OrbitControls( camera, renderer.domElement );
     setUpShadows(renderer, floor, cup, plate, kitchenCounter, walls);
     const ambientLight = createAmbientLight(scene);
@@ -364,24 +394,5 @@ function ex3() {
 
 export function main_ex3() {
     const { scene, camera, renderer} = ex3();
-    rendererSetup(renderer, scene, camera);
-}
-
-// Exercise 2
-function ex2() {
-    const { scene, camera, renderer } = ex1({ materialType: 'basic' });
-    return { scene, camera, renderer };
-}
-
-export function main_ex2() {
-    const { scene, camera, renderer} = ex2();
-    const rgbeLoader = new RGBELoader();
-    rgbeLoader.load('https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr', (envMap) => { //change it to my custom one
-        envMap.mapping = THREE.EquirectangularReflectionMapping;
-        scene.environment = envMap; // applies to all metallic materials
-    });
-    const controls = new OrbitControls( camera, renderer.domElement );
-    makeRobot(scene);
-    
     rendererSetup(renderer, scene, camera);
 }
