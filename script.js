@@ -64,19 +64,19 @@ function makePlate(scene, geometry, x, y, z, materialType = 'basic') { // functi
 }
 
 function createAmbientLight(scene) { // function to create ambient light
-    const color = 0xFFFFFF;
-    const intensity = 0.8;
+    const color = 0xFFF8E0;
+    const intensity = 0.6;
     const light = new THREE.AmbientLight(color, intensity);
     scene.add(light);
     return light;
 }
 
 function createPointLight(scene) { // function to create point light
-    const color = 0xfff8e5;
+    const color = 0xffefc7;
     const intensity = 86;
-    const distance = 12;
+    const distance = 11;
     const light = new THREE.PointLight(color, intensity, distance);
-    light.position.set(0, 8, 0);
+    light.position.set(0, 9, 0);
     light.castShadow = true;
     light.shadow.bias = 0.001; // to reduce shadow acne
     light.shadow.mapSize.width = 2048;
@@ -87,7 +87,7 @@ function createPointLight(scene) { // function to create point light
     return light;
 }
 
-function addGUI(scene, ambientLight, pointLight, cup, plate) { // function to add GUI controls for lights and materials
+function addGUI(ambientLight, pointLight, cup, plate, robot_m) { // function to add GUI controls for lights and materials
     const gui = new GUI();
     const ambientLightF = gui.addFolder('Ambient Light');
     ambientLightF.addColor(ambientLight, 'color');
@@ -121,6 +121,11 @@ function addGUI(scene, ambientLight, pointLight, cup, plate) { // function to ad
     plateF.add(cup.material, 'transmission', 0, 1).name('Cup material transmission');
     plateF.add(cup.material, 'thickness', 0, 1).name('Cup material thickness');
     plateF.addColor(plate.material, 'color').name('Plate color');  
+
+    const robotF = gui.addFolder("Robot Arm");
+    robotF.add(robot_m, 'roughness', 0, 1).name('Robot material roughness');
+    robotF.add(robot_m, 'metalness', 0, 1).name('Robot material metalness');
+    robotF.addColor(robot_m, 'color').name('Robot color');
 }
 
 function makeWheel(scene, x, y,z) {
@@ -205,7 +210,7 @@ function makeArm(x, y, z, material) {
 function makeRobot(scene) { // function to create a robot
     // body
     const robot = new THREE.Group();
-    const robot_m = new THREE.MeshStandardMaterial( { color: 0xa6a6a6, metalness: 0.6, roughness: 0.5 } );
+    const robot_m = new THREE.MeshStandardMaterial( { color: 0xa6a6a6, metalness: 0.55, roughness: 0.436 } );
     const body_g = new THREE.CylinderGeometry( 0.9, 0.6, 1.7, 35,  );
     const body = new THREE.Mesh( body_g, robot_m );
     body.position.y = 2;
@@ -241,23 +246,29 @@ function makeRobot(scene) { // function to create a robot
     arm1.gripper.rotation.x = -0.3;    // only gripper
     scene.add( robot );
 
-    return robot;
+    return {robot, robot_m};
 }
 
 //renderer setup function
 function rendererSetup(renderer, scene, camera) {
     function animate( time ) {
         renderer.render( scene, camera);
+        console.log(camera.position, camera.rotation);
     }
     renderer.setAnimationLoop( animate );
 }
 
-function setUpShadows(renderer, floor, cup, plate, kitchenCounter, walls) { // function to set up shadows for the scene
+function setUpShadows(renderer, floor, cup, plate, kitchenCounter, walls, robot) { // function to set up shadows for the scene
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     floor.receiveShadow = true;
     cup.castShadow = true;
     plate.castShadow = true;
+    robot.traverse(child => {
+    if (child.isMesh) { // to set up shadows for every child, grandchild in the group
+        child.castShadow = true;
+         }
+    });
     kitchenCounter.forEach(counter => {
         counter.receiveShadow = true;
     });
@@ -382,13 +393,14 @@ export function main_ex2() {
 // Exercise 3
 function ex3() {
     const { scene, camera, renderer, cup, plate, floor, walls, kitchenCounter } = ex1({ materialType: 'standard' });
-    const robot = makeRobot(scene);
-    scene.add(robot);  
-    const controls = new OrbitControls( camera, renderer.domElement );
-    setUpShadows(renderer, floor, cup, plate, kitchenCounter, walls);
+    camera.position.set(-6.269308962972567, 6.661940301570966, -7.298628539980681);
+    camera.rotation.set(-2.401769092107173, -0.5653482438617069, -2.686801611838985, 'XYZ');
+    const { robot, robot_m } = makeRobot(scene);
+    scene.add(robot); 
+    setUpShadows(renderer, floor, cup, plate, kitchenCounter, walls, robot);
     const ambientLight = createAmbientLight(scene);
     const pointLight = createPointLight(scene);
-    addGUI(scene, ambientLight, pointLight, cup, plate);
+    addGUI(ambientLight, pointLight, cup, plate, robot_m);
     return { scene, camera, renderer };
 }
 
