@@ -6,6 +6,8 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
 //comment the code
 
+const gui = new GUI();
+
 function makeWall(scene, texture, color, x, y, z, materialType = 'basic') { // function to create walls
     const wall_g = new THREE.BoxGeometry(0.3, 6, 10);
     const wall_m = materialType === 'standard' //a change to use StandardMaterial for casting shadows in exercise3
@@ -88,7 +90,6 @@ function createPointLight(scene) { // function to create point light
 }
 
 function addGUI(ambientLight, pointLight, cup, plate, robot_m) { // function to add GUI controls for lights and materials
-    const gui = new GUI();
     const ambientLightF = gui.addFolder('Ambient Light');
     ambientLightF.addColor(ambientLight, 'color');
     ambientLightF.add(ambientLight, 'intensity', 0, 2);
@@ -122,7 +123,7 @@ function addGUI(ambientLight, pointLight, cup, plate, robot_m) { // function to 
     plateF.add(cup.material, 'thickness', 0, 1).name('Cup material thickness');
     plateF.addColor(plate.material, 'color').name('Plate color');  
 
-    const robotF = gui.addFolder("Robot Arm");
+    const robotF = gui.addFolder("Robot Material");
     robotF.add(robot_m, 'roughness', 0, 1).name('Robot material roughness');
     robotF.add(robot_m, 'metalness', 0, 1).name('Robot material metalness');
     robotF.addColor(robot_m, 'color').name('Robot color');
@@ -168,8 +169,9 @@ function makeGripper(x, y, z, material) {
     return gripper;
 }
 
-function makeArm(x, y, z, material) {
+function makeArm(x, y, z, material, name) {
     const shoulder_j = new THREE.Group(); // to handle the pivots
+    shoulder_j.name = name;
     const shoulder_g = new THREE.SphereGeometry( 0.3, 20, 20 );
     const shoulder = new THREE.Mesh( shoulder_g, material );
     shoulder.position.set(0, 0, 0);
@@ -182,6 +184,7 @@ function makeArm(x, y, z, material) {
     shoulder_j.add(upperArm);
 
     const elbow_j = new THREE.Group(); 
+    elbow_j.name = "Elbow Joint";
     elbow_j.position.set(0, -1.1, 0);
     const elbow_g = new THREE.SphereGeometry( 0.25, 20, 20 );
     const elbow = new THREE.Mesh( elbow_g, material );
@@ -195,6 +198,7 @@ function makeArm(x, y, z, material) {
     elbow_j.add(lowerArm);
     
     const gripper = makeGripper(0, -1, 0, material);
+    gripper.name = "Gripper";
     elbow_j.add(gripper);
 
     shoulder_j.position.set(x, y, z);
@@ -235,8 +239,8 @@ function makeRobot(scene) { // function to create a robot
     robot.add(wheel2);
 
     // hand with child objects
-    const arm1 = makeArm( -1.15, 2.65, 0, robot_m);
-    const arm2 = makeArm(1.15, 2.65, 0, robot_m);
+    const arm1 = makeArm( -1.15, 2.65, 0, robot_m, "Right Arm");
+    const arm2 = makeArm(1.15, 2.65, 0, robot_m, "Left Arm");
     robot.add(arm1.shoulder_j);
     robot.add(arm2.shoulder_j);
 
@@ -253,7 +257,6 @@ function makeRobot(scene) { // function to create a robot
 function rendererSetup(renderer, scene, camera) {
     function animate( time ) {
         renderer.render( scene, camera);
-        console.log(camera.position, camera.rotation);
     }
     renderer.setAnimationLoop( animate );
 }
@@ -401,10 +404,64 @@ function ex3() {
     const ambientLight = createAmbientLight(scene);
     const pointLight = createPointLight(scene);
     addGUI(ambientLight, pointLight, cup, plate, robot_m);
-    return { scene, camera, renderer };
+    return { scene, camera, renderer, robot };
 }
 
 export function main_ex3() {
     const { scene, camera, renderer} = ex3();
     rendererSetup(renderer, scene, camera);
+}
+
+//renderer setup function with robot's arm animation
+function rendererSetupAnim(renderer, scene, camera, robot) {
+    console.log(robot.children);
+    // for access to the parts of the rightarm
+    const rightArm = robot.getObjectByName("Right Arm");
+    const elbow = rightArm.getObjectByName("Elbow Joint");
+    const gripper = rightArm.getObjectByName("Gripper");
+
+    //reset to the initial state of the arm
+    rightArm.rotation.y = 0; 
+    elbow.rotation.z = 0;   
+    gripper.rotation.x = 0;  
+
+    // for access to the parts of the left arm
+    const leftArm = robot.getObjectByName("Left Arm");
+    const elbow_l = leftArm.getObjectByName("Elbow Joint");
+    const gripper_l = leftArm.getObjectByName("Gripper");
+
+    // gui for angles of the joints
+    var a = 1;
+    var b = -1;
+    var c = -1;
+    const armAnimF = gui.addFolder('Arm Animation');
+    armAnimF.add({a}, 'a', -3, 3).name('Shoulder rotation amplitude').onChange(value => a = value);
+    armAnimF.add({b}, 'b', -3, 3).name('Elbow rotation amplitude').onChange(value => b = value);
+    armAnimF.add({c}, 'c', -3, 3).name('Gripper rotation amplitude').onChange(value => c = value);
+
+    function animate( time ) {
+        renderer.render( scene, camera);
+        // animation of the right arm
+        rightArm.rotation.x = a *  Math.sin(Date.now() / 600); 
+        elbow.rotation.z = b * Math.sin(3 + Date.now() / 600);
+        gripper.rotation.z = c * Math.sin(4 + Date.now() / 600);
+
+        // animation of the left arm
+        leftArm.rotation.x = -a * Math.sin(Date.now() / 600); 
+        elbow_l.rotation.z = -b * Math.sin(3 + Date.now() / 600);
+        gripper_l.rotation.z = -c * Math.sin(4 + Date.now() / 600);
+    }
+    renderer.setAnimationLoop( animate );
+}
+
+// Exercise 4
+function ex4() {
+    const  { scene, camera, renderer, robot } = ex3();
+    const orbitControls = new OrbitControls( camera, renderer.domElement );
+    return { scene, camera, renderer, robot };
+}
+
+export function main_ex4() {
+    const { scene, camera, renderer, robot} = ex4();
+    rendererSetupAnim(renderer, scene, camera, robot);
 }
