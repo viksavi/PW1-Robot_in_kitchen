@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Practical work, Exercise 5</title>
+      <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+    <style>
+    body {
+      margin: 0;
+      background: white;
+    }
+
+    #VRButton {
+      position: fixed !important;
+
+      top: 50% !important;
+      left: 50% !important;
+      bottom: auto !important;
+      right: auto !important;
+
+      transform: translate(-50%, -50%) !important;
+
+      padding: 16px 28px;
+      border-radius: 10px;
+
+      background: #111 !important;
+      color: #fff !important;
+
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+
+      border: 2px solid #111;
+      cursor: pointer;
+
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    #VRButton:hover {
+      background: #333 !important;
+    }
+  </style>
+  </head>
+  <body>
+    <script type="module">
+    import { VRButton } from 'three/addons/webxr/VRButton.js';
+    import { main_ex5 } from '../script.js';
+
+    const renderer = main_ex5();
+    document.body.appendChild(renderer.domElement);
+    document.body.appendChild(VRButton.createButton(renderer));
+    </script>
+  </body>
+</html>
