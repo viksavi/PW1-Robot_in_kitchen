@@ -4,8 +4,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
-//comment the code
-
 const gui = new GUI();
 
 function makeWall(scene, texture, color, x, y, z, materialType = 'basic') { // function to create walls
@@ -229,6 +227,7 @@ function makeRobot(scene) { // function to create a robot
     // head
     const head_g = new RoundedBoxGeometry(1.4, 0.9, 0.8, 8, 0.25);
     const head = new THREE.Mesh( head_g, robot_m );
+    head.name = "Head";
     head.position.y = 3.5;
     robot.add(head);
 
@@ -464,4 +463,103 @@ function ex4() {
 export function main_ex4() {
     const { scene, camera, renderer, robot} = ex4();
     rendererSetupAnim(renderer, scene, camera, robot);
+}
+
+// a separate renderer for XR
+function rendererXR(renderer, scene, camera, robot, cameraRig, controller1, controller2, grip1) {
+    const head = robot.getObjectByName("Head");
+    const headWorldPos = new THREE.Vector3();
+    const rightArm = robot.getObjectByName("Right Arm");
+    const leftArm = robot.getObjectByName("Left Arm");
+
+    renderer.setAnimationLoop( function () {
+        moveArm(controller2, rightArm, "right");
+        moveArm(controller1, leftArm, "left");
+        
+        
+        // update camera position
+        if (head) {
+            head.getWorldPosition(headWorldPos);
+            cameraRig.position.set(0, 6, 0); 
+            cameraRig.rotation.y = Math.PI;
+            cameraRig.rotation.x = Math.PI/3;
+        }
+        
+        renderer.render( scene, camera );
+    } );
+}
+
+const prevElbow = {
+    left: { z: 0 },
+    right: { z: 0 }
+};
+    
+function moveArm(controller, arm, side) {
+    //get the joints of the arm
+    const elbow = arm.getObjectByName("Elbow Joint");
+    const gripper = arm.getObjectByName("Gripper");
+
+    //reset to the initial state of the arm
+    arm.rotation.y = 0;
+    elbow.rotation.z = 0;   
+    gripper.rotation.x = 0;  
+
+    const prev = prevElbow[side];
+    const deg = THREE.MathUtils.degToRad;
+    const MAX_DELTA = deg(15); 
+    const q = controller.quaternion.clone();
+
+    // mirror space for left arm
+    if (side === "left") {
+        q.x *= -1;
+        q.y *= -1;
+    }
+
+    const ctrl = new THREE.Euler().setFromQuaternion(q, 'YXZ');
+    const z = Math.abs(ctrl.z - prev.z) < MAX_DELTA ? ctrl.z : prev.z;
+
+    // symmetric clamp
+    const clamped = THREE.MathUtils.clamp(z, deg(-140), deg(140));
+
+    elbow.rotation.z = clamped;
+
+    // linking controller1 with the shoulder
+    arm.rotation.x = controller.rotation.x;
+    arm.rotation.z = controller.rotation.y;
+
+    //the previous value of elbow rotation
+    prev.z = elbow.rotation.z;
+}
+// Exercise 5
+function ex5() {
+    const  { scene, camera, robot } = ex4();
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true; 
+    // to enable shadows in VR
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // camera rig to control the camera (headset) position
+    const cameraRig = new THREE.Group();
+    scene.add(cameraRig);
+    cameraRig.add(camera);
+
+    const controller1 = renderer.xr.getController(0);
+    const controller2 = renderer.xr.getController(1);
+    scene.add(controller1, controller2);
+
+    const grip1 = renderer.xr.getControllerGrip(0);
+    scene.add(grip1);
+
+
+
+    return { scene, camera, renderer, robot, cameraRig, controller1, controller2, grip1};
+}
+
+export function main_ex5() {
+    const { scene, camera, renderer, robot, cameraRig, controller1, controller2, grip1} = ex5();
+    rendererXR(renderer, scene, camera, robot, cameraRig, controller1, controller2, grip1);
+    return renderer;
 }
