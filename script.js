@@ -550,16 +550,11 @@ function ex5() {
     const controller2 = renderer.xr.getController(1);
     scene.add(controller1, controller2);
 
-    const grip1 = renderer.xr.getControllerGrip(0);
-    scene.add(grip1);
-
-
-
-    return { scene, camera, renderer, robot, cameraRig, controller1, controller2, grip1};
+    return { scene, camera, renderer, robot, cameraRig, controller1, controller2};
 }
 
 export function main_ex5() {
-    const { scene, camera, renderer, robot, cameraRig, controller1, controller2, grip1} = ex5();
-    rendererXR(renderer, scene, camera, robot, cameraRig, controller1, controller2, grip1);
+    const { scene, camera, renderer, robot, cameraRig, controller1, controller2} = ex5();
+    rendererXR(renderer, scene, camera, robot, cameraRig, controller1, controller2);
     return renderer;
 }
