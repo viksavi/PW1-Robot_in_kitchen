@@ -313,8 +313,8 @@ function ex1({ materialType = 'basic' } = {})
     const wall_txt = loader.load( '../textures/wallpaper.jpg' );
     wall_txt.colorSpace = THREE.SRGBColorSpace;
     const walls = [ 
-        makeWall(scene, wall_txt, 0xFFFFFF, 5, 3, 0, materialType),
-        makeWall(scene, wall_txt, 0xFFFFFF, 0, 3, 5, materialType)
+        makeWall(scene, wall_txt, 0xFFFFFF, 5, 3.01, 0, materialType),
+        makeWall(scene, wall_txt, 0xFFFFFF, 0, 3.01, 5, materialType)
     ]; // creating walls
     walls[1].rotation.y = Math.PI / 2
 
@@ -326,18 +326,18 @@ function ex1({ materialType = 'basic' } = {})
     counter_down_txt.colorSpace = THREE.SRGBColorSpace;
 
     const geometry_c1_up = new THREE.BoxGeometry(2, 0.1, 2.3);
-    const geometry_c2_up = new THREE.BoxGeometry(2.9, 0.1, 2.3);
-    const geometry_c3_up = new THREE.BoxGeometry(2.5, 0.1, 2.3);
+    const geometry_c2_up = new THREE.BoxGeometry(3, 0.1, 2.3);
+    const geometry_c3_up = new THREE.BoxGeometry(2.6, 0.1, 2.3);
     const counter_up_txt = loader.load( '../textures/counter_up.jpg' );
     counter_up_txt.colorSpace = THREE.SRGBColorSpace;
 
     const kitchenCounter = [
-        makeKitchenCounter(scene, geometry_c1, counter_down_txt, 4, 1.25, 4, materialType ),
-        makeKitchenCounter(scene, geometry_c2, counter_down_txt, 1.5, 1.25, 4, materialType ),
-        makeKitchenCounter(scene, geometry_c3, counter_down_txt, -1, 1.25, 4, materialType ),
-        makeKitchenCounter(scene, geometry_c1_up, counter_up_txt, 4, 2.5, 4, materialType ),
-        makeKitchenCounter(scene, geometry_c2_up, counter_up_txt, 1.6, 2.5, 4, materialType ),
-        makeKitchenCounter(scene, geometry_c3_up, counter_up_txt, -1, 2.5, 4, materialType ),
+        makeKitchenCounter(scene, geometry_c1, counter_down_txt, 4, 1.26, 4, materialType ),
+        makeKitchenCounter(scene, geometry_c2, counter_down_txt, 1.5, 1.26, 4, materialType ),
+        makeKitchenCounter(scene, geometry_c3, counter_down_txt, -1.25, 1.26, 4, materialType ),
+        makeKitchenCounter(scene, geometry_c1_up, counter_up_txt, 4, 2.5, 3.9, materialType ),
+        makeKitchenCounter(scene, geometry_c2_up, counter_up_txt, 1.5, 2.5, 3.9, materialType ),
+        makeKitchenCounter(scene, geometry_c3_up, counter_up_txt, -1.30, 2.5, 3.9, materialType ),
     ];
 
     // creating cup 
