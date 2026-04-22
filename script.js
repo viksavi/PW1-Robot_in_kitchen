@@ -469,16 +469,22 @@ export function main_ex4() {
 function rendererXR(renderer, scene, camera, robot, cameraRig, controller1, controller2, grip1) {
     const rightArm = robot.getObjectByName("Right Arm");
     const leftArm = robot.getObjectByName("Left Arm");
+    const elbowR = rightArm.getObjectByName("Elbow Joint");
+    const elbowL = leftArm.getObjectByName("Elbow Joint");
+    const gripperR = rightArm.getObjectByName("Gripper");
+
+    //reset to the initial state of the arm
+    rightArm.rotation.y = 0;
+    elbowR.rotation.z = 0;   
+    gripperR.rotation.x = 0;  
+
+    cameraRig.position.set(0, 6, 0.7); 
+    cameraRig.rotation.y = Math.PI;
+    cameraRig.rotation.x = Math.PI / 3;
 
     renderer.setAnimationLoop( function () {
         moveArm(controller2, rightArm, "right");
         moveArm(controller1, leftArm, "left");
-        
-        cameraRig.position.set(0, 6, 0.7); 
-        cameraRig.rotation.y = Math.PI;
-        cameraRig.rotation.x = Math.PI / 3;
-    
-
         
         renderer.render( scene, camera );
     } );
@@ -492,12 +498,6 @@ const prevElbow = {
 function moveArm(controller, arm, side) {
     //get the joints of the arm
     const elbow = arm.getObjectByName("Elbow Joint");
-    const gripper = arm.getObjectByName("Gripper");
-
-    //reset to the initial state of the arm
-    arm.rotation.y = 0;
-    elbow.rotation.z = 0;   
-    gripper.rotation.x = 0;  
 
     const prev = prevElbow[side];
     const deg = THREE.MathUtils.degToRad;
@@ -519,12 +519,13 @@ function moveArm(controller, arm, side) {
     elbow.rotation.z = clamped;
 
     // linking controller1 with the shoulder
-    arm.rotation.x = controller.rotation.x;
-    arm.rotation.z = controller.rotation.y;
+    arm.rotation.x = ctrl.x;
+    arm.rotation.z = ctrl.y;
 
     //the previous value of elbow rotation
     prev.z = elbow.rotation.z;
 }
+
 // Exercise 5
 function ex5() {
     const  { scene, camera, robot, floor, walls } = ex4();
