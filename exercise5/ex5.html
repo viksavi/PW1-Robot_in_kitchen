@@ -12,50 +12,66 @@
     }
   </script>
     <style>
-    body {
-      margin: 0;
-      background: white;
-    }
+      #VRButton, #ARButton {
+        position: fixed !important; 
+        top: 50% !important; 
+        left: 50% !important; 
+        bottom: auto !important; 
+        right: auto !important; 
+        transform: translate(-50%, -50%) !important;
 
-    #VRButton {
-      position: fixed !important;
+        padding: 16px 28px;
+        border-radius: 10px;
 
-      top: 50% !important;
-      left: 50% !important;
-      bottom: auto !important;
-      right: auto !important;
+        background: #111 !important;
+        color: #fff !important;
 
-      transform: translate(-50%, -50%) !important;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        font-weight: 600;
 
-      padding: 16px 28px;
-      border-radius: 10px;
+        border: 2px solid #111;
+        cursor: pointer;
 
-      background: #111 !important;
-      color: #fff !important;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      }
 
-      font-family: Arial, sans-serif;
-      font-size: 16px;
-      font-weight: 600;
+      #VRButton {
+        left: calc(50% - 120px) !important;
+      }
 
-      border: 2px solid #111;
-      cursor: pointer;
+      #ARButton {
+        left: calc(50% + 20px) !important;
+      }
 
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-    }
-
-    #VRButton:hover {
-      background: #333 !important;
-    }
+      #VRButton:hover,
+      #ARButton:hover {
+        background: #333 !important;
+      }
   </style>
   </head>
   <body>
     <script type="module">
     import { VRButton } from 'three/addons/webxr/VRButton.js';
+    import { ARButton } from 'three/addons/webxr/ARButton.js';
     import { main_ex5 } from '../script.js';
+
+    let XRMode = null;
 
     const renderer = main_ex5();
     document.body.appendChild(renderer.domElement);
-    document.body.appendChild(VRButton.createButton(renderer));
+    const vrButton = VRButton.createButton(renderer);
+    vrButton.addEventListener('click', () => {
+      renderer.userData.xrMode = 'vr';
+    });
+
+    const arButton = ARButton.createButton(renderer);
+    arButton.addEventListener('click', () => {
+      renderer.userData.xrMode = 'ar';
+    });
+
+    document.body.appendChild(vrButton);
+    document.body.appendChild(arButton);
     </script>
   </body>
 </html>

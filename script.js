@@ -403,7 +403,7 @@ function ex3() {
     const ambientLight = createAmbientLight(scene);
     const pointLight = createPointLight(scene);
     addGUI(ambientLight, pointLight, cup, plate, robot_m);
-    return { scene, camera, renderer, robot };
+    return { scene, camera, renderer, robot, floor, walls };
 }
 
 export function main_ex3() {
@@ -455,9 +455,9 @@ function rendererSetupAnim(renderer, scene, camera, robot) {
 
 // Exercise 4
 function ex4() {
-    const  { scene, camera, renderer, robot } = ex3();
+    const  { scene, camera, renderer, robot, floor, walls } = ex3();
     const orbitControls = new OrbitControls( camera, renderer.domElement );
-    return { scene, camera, renderer, robot };
+    return { scene, camera, renderer, robot, floor, walls };
 }
 
 export function main_ex4() {
@@ -467,8 +467,6 @@ export function main_ex4() {
 
 // a separate renderer for XR
 function rendererXR(renderer, scene, camera, robot, cameraRig, controller1, controller2, grip1) {
-    const head = robot.getObjectByName("Head");
-    const headWorldPos = new THREE.Vector3();
     const rightArm = robot.getObjectByName("Right Arm");
     const leftArm = robot.getObjectByName("Left Arm");
 
@@ -476,14 +474,11 @@ function rendererXR(renderer, scene, camera, robot, cameraRig, controller1, cont
         moveArm(controller2, rightArm, "right");
         moveArm(controller1, leftArm, "left");
         
-        
-        // update camera position
-        if (head) {
-            head.getWorldPosition(headWorldPos);
-            cameraRig.position.set(0, 6, 0); 
-            cameraRig.rotation.y = Math.PI;
-            cameraRig.rotation.x = Math.PI/3;
-        }
+        cameraRig.position.set(0, 6, 0.7); 
+        cameraRig.rotation.y = Math.PI;
+        cameraRig.rotation.x = Math.PI / 3;
+    
+
         
         renderer.render( scene, camera );
     } );
@@ -532,14 +527,25 @@ function moveArm(controller, arm, side) {
 }
 // Exercise 5
 function ex5() {
-    const  { scene, camera, robot } = ex4();
+    const  { scene, camera, robot, floor, walls } = ex4();
+    robot.position.z += 1; //move robot closer to the kicthen counter
     
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.userData = {};
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true; 
     // to enable shadows in VR
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setClearColor(0x000000, 0); // to make the background transparent in AR
+
+    renderer.xr.addEventListener('sessionstart', () => { // to switch between AR and VR modes
+        const isAR = renderer.userData.xrMode === 'ar';
+        renderer.setClearColor(0x000000, isAR ? 0 : 1);
+        walls.forEach(w => w.visible = !isAR);
+        floor.visible = !isAR;
+        
+    });
 
     // camera rig to control the camera (headset) position
     const cameraRig = new THREE.Group();
