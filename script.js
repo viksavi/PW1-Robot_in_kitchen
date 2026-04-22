@@ -313,8 +313,8 @@ function ex1({ materialType = 'basic' } = {})
     const wall_txt = loader.load( '../textures/wallpaper.jpg' );
     wall_txt.colorSpace = THREE.SRGBColorSpace;
     const walls = [ 
-        makeWall(scene, wall_txt, 0xFFFFFF, 5, 3, 0, materialType),
-        makeWall(scene, wall_txt, 0xFFFFFF, 0, 3, 5, materialType)
+        makeWall(scene, wall_txt, 0xFFFFFF, 5, 3.01, 0, materialType),
+        makeWall(scene, wall_txt, 0xFFFFFF, 0, 3.01, 5, materialType)
     ]; // creating walls
     walls[1].rotation.y = Math.PI / 2
 
@@ -326,18 +326,18 @@ function ex1({ materialType = 'basic' } = {})
     counter_down_txt.colorSpace = THREE.SRGBColorSpace;
 
     const geometry_c1_up = new THREE.BoxGeometry(2, 0.1, 2.3);
-    const geometry_c2_up = new THREE.BoxGeometry(2.9, 0.1, 2.3);
-    const geometry_c3_up = new THREE.BoxGeometry(2.5, 0.1, 2.3);
+    const geometry_c2_up = new THREE.BoxGeometry(3, 0.1, 2.3);
+    const geometry_c3_up = new THREE.BoxGeometry(2.6, 0.1, 2.3);
     const counter_up_txt = loader.load( '../textures/counter_up.jpg' );
     counter_up_txt.colorSpace = THREE.SRGBColorSpace;
 
     const kitchenCounter = [
-        makeKitchenCounter(scene, geometry_c1, counter_down_txt, 4, 1.25, 4, materialType ),
-        makeKitchenCounter(scene, geometry_c2, counter_down_txt, 1.5, 1.25, 4, materialType ),
-        makeKitchenCounter(scene, geometry_c3, counter_down_txt, -1, 1.25, 4, materialType ),
-        makeKitchenCounter(scene, geometry_c1_up, counter_up_txt, 4, 2.5, 4, materialType ),
-        makeKitchenCounter(scene, geometry_c2_up, counter_up_txt, 1.6, 2.5, 4, materialType ),
-        makeKitchenCounter(scene, geometry_c3_up, counter_up_txt, -1, 2.5, 4, materialType ),
+        makeKitchenCounter(scene, geometry_c1, counter_down_txt, 4, 1.26, 4, materialType ),
+        makeKitchenCounter(scene, geometry_c2, counter_down_txt, 1.5, 1.26, 4, materialType ),
+        makeKitchenCounter(scene, geometry_c3, counter_down_txt, -1.25, 1.26, 4, materialType ),
+        makeKitchenCounter(scene, geometry_c1_up, counter_up_txt, 4, 2.5, 3.9, materialType ),
+        makeKitchenCounter(scene, geometry_c2_up, counter_up_txt, 1.5, 2.5, 3.9, materialType ),
+        makeKitchenCounter(scene, geometry_c3_up, counter_up_txt, -1.30, 2.5, 3.9, materialType ),
     ];
 
     // creating cup 
@@ -403,7 +403,7 @@ function ex3() {
     const ambientLight = createAmbientLight(scene);
     const pointLight = createPointLight(scene);
     addGUI(ambientLight, pointLight, cup, plate, robot_m);
-    return { scene, camera, renderer, robot };
+    return { scene, camera, renderer, robot, floor, walls };
 }
 
 export function main_ex3() {
@@ -455,9 +455,9 @@ function rendererSetupAnim(renderer, scene, camera, robot) {
 
 // Exercise 4
 function ex4() {
-    const  { scene, camera, renderer, robot } = ex3();
+    const  { scene, camera, renderer, robot, floor, walls } = ex3();
     const orbitControls = new OrbitControls( camera, renderer.domElement );
-    return { scene, camera, renderer, robot };
+    return { scene, camera, renderer, robot, floor, walls };
 }
 
 export function main_ex4() {
@@ -467,23 +467,24 @@ export function main_ex4() {
 
 // a separate renderer for XR
 function rendererXR(renderer, scene, camera, robot, cameraRig, controller1, controller2, grip1) {
-    const head = robot.getObjectByName("Head");
-    const headWorldPos = new THREE.Vector3();
     const rightArm = robot.getObjectByName("Right Arm");
     const leftArm = robot.getObjectByName("Left Arm");
+    const elbowR = rightArm.getObjectByName("Elbow Joint");
+    const elbowL = leftArm.getObjectByName("Elbow Joint");
+    const gripperR = rightArm.getObjectByName("Gripper");
+
+    //reset to the initial state of the arm
+    rightArm.rotation.y = 0;
+    elbowR.rotation.z = 0;   
+    gripperR.rotation.x = 0;  
+
+    cameraRig.position.set(0, 6, 0.7); 
+    cameraRig.rotation.y = Math.PI;
+    cameraRig.rotation.x = Math.PI / 3;
 
     renderer.setAnimationLoop( function () {
         moveArm(controller2, rightArm, "right");
         moveArm(controller1, leftArm, "left");
-        
-        
-        // update camera position
-        if (head) {
-            head.getWorldPosition(headWorldPos);
-            cameraRig.position.set(0, 6, 0); 
-            cameraRig.rotation.y = Math.PI;
-            cameraRig.rotation.x = Math.PI/3;
-        }
         
         renderer.render( scene, camera );
     } );
@@ -497,12 +498,6 @@ const prevElbow = {
 function moveArm(controller, arm, side) {
     //get the joints of the arm
     const elbow = arm.getObjectByName("Elbow Joint");
-    const gripper = arm.getObjectByName("Gripper");
-
-    //reset to the initial state of the arm
-    arm.rotation.y = 0;
-    elbow.rotation.z = 0;   
-    gripper.rotation.x = 0;  
 
     const prev = prevElbow[side];
     const deg = THREE.MathUtils.degToRad;
@@ -524,22 +519,34 @@ function moveArm(controller, arm, side) {
     elbow.rotation.z = clamped;
 
     // linking controller1 with the shoulder
-    arm.rotation.x = controller.rotation.x;
-    arm.rotation.z = controller.rotation.y;
+    arm.rotation.x = ctrl.x;
+    arm.rotation.z = ctrl.y;
 
     //the previous value of elbow rotation
     prev.z = elbow.rotation.z;
 }
+
 // Exercise 5
 function ex5() {
-    const  { scene, camera, robot } = ex4();
+    const  { scene, camera, robot, floor, walls } = ex4();
+    robot.position.z += 1; //move robot closer to the kicthen counter
     
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.userData = {};
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true; 
     // to enable shadows in VR
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setClearColor(0x000000, 0); // to make the background transparent in AR
+
+    renderer.xr.addEventListener('sessionstart', () => { // to switch between AR and VR modes
+        const isAR = renderer.userData.xrMode === 'ar';
+        renderer.setClearColor(0x000000, isAR ? 0 : 1);
+        walls.forEach(w => w.visible = !isAR);
+        floor.visible = !isAR;
+        
+    });
 
     // camera rig to control the camera (headset) position
     const cameraRig = new THREE.Group();
@@ -550,16 +557,11 @@ function ex5() {
     const controller2 = renderer.xr.getController(1);
     scene.add(controller1, controller2);
 
-    const grip1 = renderer.xr.getControllerGrip(0);
-    scene.add(grip1);
-
-
-
-    return { scene, camera, renderer, robot, cameraRig, controller1, controller2, grip1};
+    return { scene, camera, renderer, robot, cameraRig, controller1, controller2};
 }
 
 export function main_ex5() {
-    const { scene, camera, renderer, robot, cameraRig, controller1, controller2, grip1} = ex5();
-    rendererXR(renderer, scene, camera, robot, cameraRig, controller1, controller2, grip1);
+    const { scene, camera, renderer, robot, cameraRig, controller1, controller2} = ex5();
+    rendererXR(renderer, scene, camera, robot, cameraRig, controller1, controller2);
     return renderer;
 }
